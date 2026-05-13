@@ -17,7 +17,7 @@ from core.parameters import McEliece348864
 def expand_seed(seed: bytes, length_in_bits: int) -> List[int]:
     """
     Symmetric-crypto PRNG: Expands a seed using SHAKE256(64, seed)
-    to generate the required number of bits [cite: 336-337].
+    to generate the required number of bits.
     """
     # Spec: Prefix the seed with byte 64 (0x40)
     prefix = bytes([64])
@@ -116,7 +116,7 @@ def kem_hash(prefix: int, e: List[int], C: List[int]) -> bytes:
 
 def encode(params: McEliece348864, e_bits: List[int], T: Matrix) -> List[int]:
     """
-    Algorithm 4.3: C = He where H = (I_mt | T) [cite: 246-249].
+    Algorithm 4.3: C = He where H = (I_mt | T).
     """
     # Instead of building the massive H matrix directly,
     # we can compute this very efficiently via block multiplication.
