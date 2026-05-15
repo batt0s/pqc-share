@@ -1,21 +1,20 @@
 """PQC-Share Server (Receiver)"""
 
+import hashlib
 import os
-import pickle
 import socket
 
-from core.mceliece import decap, seeded_keygen
+from core.encoder import export_ciphertext, export_public_key, import_ciphertext
+from core.key_manager import get_or_create_keys
+from core.mceliece import decap
 from core.parameters import PARAMS
 from crypto.cipher import decrypt_file
 from network.utils import recv_msg, send_msg
 
 
 def start_server(host="0.0.0.0", port=65432, output_filename="received_secret.txt"):
-    # 1. Key Generation (TODO: Save and read the key from a file like ~/.pqc_share)
-    print("[*] (KEM) Generating keys...")
-    seed = os.urandom(32)
-    pk_T, sk = seeded_keygen(PARAMS, seed)
-    print("[+] Keys generated!")
+    # 1. Read or generate the key pair
+    pk_T, sk = get_or_create_keys()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, port))
@@ -28,12 +27,13 @@ def start_server(host="0.0.0.0", port=65432, output_filename="received_secret.tx
 
             # 2. Send the Public Key
             print("[*] Sending public key...")
-            send_msg(conn, pickle.dumps(pk_T))
+            pem_bytes = export_public_key(pk_T, PARAMS)
+            send_msg(conn, pem_bytes)
 
             # 3. Recieve the encrypted capsule (C)
             print("[*] Waiting for the capsule...")
             c_data = recv_msg(conn)
-            C = pickle.loads(c_data)
+            C = import_ciphertext(c_data, PARAMS)
 
             # 4. Decapsulation (Extract the AES Key using Patterson Algorithm)
             print("[*] Decapsulation in progress...")

@@ -229,9 +229,11 @@ def encap(params: McEliece348864, T: Matrix) -> Tuple[List[int], bytes]:
     """
     # Step 1: Generate e of weight t
     e = generate_fixed_weight(params)
+    e = [int(x) for x in e]
 
     # Step 2: Compute C = ENCODE(e, T)
     C = encode(params, e, T)
+    C = [int(x) for x in C]
 
     # Step 3: Compute K = H(1, e, C)
     K = kem_hash(1, e, C)

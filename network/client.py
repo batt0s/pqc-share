@@ -1,12 +1,15 @@
 """PQC-Share Client (Sender)"""
 
+import hashlib
 import os
-import pickle
 import socket
+import sys
 
+from core.encoder import export_ciphertext, export_public_key, import_public_key
 from core.mceliece import encap
 from core.parameters import PARAMS
 from crypto.cipher import encrypt_file
+from network.security import verify_host
 from network.utils import recv_msg, send_msg
 
 
@@ -22,7 +25,13 @@ def send_file(target_ip, target_port, file_to_send):
         # 1. Recieve the Public Key
         print("[*] Waiting for Public Key...")
         pk_data = recv_msg(s)
-        pk_T = pickle.loads(pk_data)
+
+        # Verify host
+        if not verify_host(target_ip, pk_data):
+            print("[-] Baglanti guvenlik gerekcesiyle (MITM riski) sonlandirildi.")
+            sys.exit(1)
+
+        pk_T = import_public_key(pk_data, PARAMS)
 
         # 2. Encapsulation
         print("[*] Encapsulation in progress...")
@@ -31,7 +40,8 @@ def send_file(target_ip, target_port, file_to_send):
 
         # 3. Send the capsule
         print("[*] Sending Encrypted Capsule (C)...")
-        send_msg(s, pickle.dumps(C))
+        ciphertext = export_ciphertext(C)
+        send_msg(s, ciphertext)
 
         # 4. Encrypt the file with AES-GCM
         print(f"[*] Encryption in progress... ('{file_to_send}')")

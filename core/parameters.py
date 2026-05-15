@@ -14,6 +14,7 @@ class McEliece348864:
         self.n = 3488
         self.t = 64
         self.q = 2**self.m
+        self.k = self.n - (self.m * self.t)
 
         # for symetric crypto (shake256)
         self.l = 256
