@@ -29,7 +29,7 @@ def send_file(
 
         # Verify host
         if not verify_host(target_ip, params.level, pk_data):
-            print("[-] Baglanti guvenlik gerekcesiyle (MITM riski) sonlandirildi.")
+            print("[-] Connection aborted due to security risk.")
             sys.exit(1)
 
         pk_T = import_public_key(pk_data, params)

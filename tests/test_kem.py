@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from core.mceliece import decap, encap, encode, generate_fixed_weight, seeded_keygen
+from core.mceliece import decap, encap, generate_fixed_weight, seeded_keygen
 from core.parameters import McElieceParams
 
 

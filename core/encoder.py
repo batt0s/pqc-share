@@ -5,7 +5,11 @@ Turn SageMath GF(2) matrices and algebraic objects to pure byte arrays.
 
 import base64
 import json
+import os
 
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from sage.all import GF, Matrix
 
 
@@ -63,7 +67,7 @@ def import_public_key(pem_bytes: bytes, params):
     return Matrix(GF(2), params.m * params.t, params.k, bits)
 
 
-def export_private_key(private_key_dict: dict) -> bytes:
+def export_private_key(private_key_dict: dict, passphrase: str = "") -> bytes:
     """
     Private Key Dictionary to PEM bytes.
     Serialize g (polynomial), alpha (list) ve s (bytes).
@@ -73,16 +77,43 @@ def export_private_key(private_key_dict: dict) -> bytes:
         return sum(int(bit) << i for i, bit in enumerate(elem.polynomial().list()))
 
     # Turn coefficents of polynomial g and alphas into integers
-    data = {
+    raw_data = {
         "g": [elem_to_int(c) for c in private_key_dict["g"].list()],
         "alpha": [elem_to_int(a) for a in private_key_dict["alpha"]],
         "s": [int(bit) for bit in private_key_dict["s"]],
     }
 
-    # Package them into a JSON string and to Base64
-    json_bytes = json.dumps(data).encode("utf-8")
-    b64 = base64.b64encode(json_bytes).decode("utf-8")
-    b64_lines = [b64[i : i + 64] for i in range(0, len(b64), 64)]
+    json_bytes = json.dumps(raw_data).encode("utf-8")
+
+    if passphrase:
+        salt = os.urandom(16)
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=480000,  # NIST recommended iterations
+        )
+        key = kdf.derive(passphrase.encode("utf-8"))
+
+        aesgcm = AESGCM(key)
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, json_bytes, None)
+
+        final_data = {
+            "encrypted": True,
+            "ciphertext": base64.b64encode(ciphertext).decode("utf-8"),
+            "salt": base64.b64encode(salt).decode("utf-8"),
+            "nonce": base64.b64encode(nonce).decode("utf-8"),
+        }
+    else:
+        final_data = {
+            "encrypted": False,
+            "data": raw_data,
+        }
+
+    final_json_bytes = json.dumps(final_data).encode("utf-8")
+    b64_str = base64.b64encode(final_json_bytes).decode("utf-8")
+    b64_lines = [b64_str[i : i + 64] for i in range(0, len(b64_str), 64)]
 
     pem = "-----BEGIN McEliece PRIVATE KEY-----\n"
     pem += "\n".join(b64_lines)
@@ -90,7 +121,7 @@ def export_private_key(private_key_dict: dict) -> bytes:
     return pem.encode("utf-8")
 
 
-def import_private_key(pem_bytes: bytes, params):
+def import_private_key(pem_bytes: bytes, params, passphrase: str = ""):
     """PEM bytes to SageMath Private Key Dictionary"""
     pem_str = pem_bytes.decode("utf-8").strip()
     lines = pem_str.split("\n")
@@ -98,6 +129,32 @@ def import_private_key(pem_bytes: bytes, params):
 
     json_bytes = base64.b64decode(b64)
     data = json.loads(json_bytes.decode("utf-8"))
+
+    if data.get("encrypted"):
+        if not passphrase:
+            raise ValueError("Passphrase is required for encrypted keys")
+
+        salt = base64.b64decode(data["salt"])
+        nonce = base64.b64decode(data["nonce"])
+        ciphertext = base64.b64decode(data["ciphertext"])
+
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=480000,
+        )
+        key = kdf.derive(passphrase.encode("utf-8"))
+        aesgcm = AESGCM(key)
+
+        try:
+            decrypted_bytes = aesgcm.decrypt(nonce, ciphertext, None)
+        except Exception as e:
+            raise ValueError("Failed to decrypt key: " + str(e))
+
+        raw_data = json.loads(decrypted_bytes.decode("utf-8"))
+    else:
+        raw_data = data.get("data", data)
 
     def int_to_elem(val, field):
         a = field.gen()  # generator of field
@@ -110,11 +167,11 @@ def import_private_key(pem_bytes: bytes, params):
             i += 1
         return res
 
-    g_coeffs = [int_to_elem(c, params.F_q) for c in data["g"]]
+    g_coeffs = [int_to_elem(c, params.F_q) for c in raw_data["g"]]
     g = params.R_y(g_coeffs)
 
-    alphas = tuple(int_to_elem(a, params.F_q) for a in data["alpha"])
-    s = [GF(2)(bit) for bit in data["s"]]
+    alphas = tuple(int_to_elem(a, params.F_q) for a in raw_data["alpha"])
+    s = [GF(2)(bit) for bit in raw_data["s"]]
 
     return {"g": g, "alpha": alphas, "s": s}
 

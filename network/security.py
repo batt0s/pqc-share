@@ -37,8 +37,7 @@ def verify_host(
             host, level, fpr = line.split(" ", 2)
             if host not in known_hosts:
                 known_hosts[host] = {}
-            known_hosts[host][level] = fpr
-
+            known_hosts[host][int(level)] = fpr
     if target_host in known_hosts and selected_level in known_hosts[target_host]:
         if known_hosts[target_host][selected_level] == fingerprint:
             return True  # Recognized, fingerprint matched, safe.
@@ -56,7 +55,6 @@ def verify_host(
             print(f"Received fingerprint : SHA256:{fingerprint}")
             print("=" * 65 + "\n")
             return False
-
     else:
         if (
             target_host in known_hosts

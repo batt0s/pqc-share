@@ -71,7 +71,7 @@ def main():
 
     params = parameters.McElieceParams(level=args.level)
     print(f"[*] Using NIST Level {args.level}")
-    print("[!] Warning: Bot sides must use the same level!")
+    print("[!] Warning: Both sides must use the same level!")
 
     # CLI
     if args.command == "listen":
