@@ -3,6 +3,8 @@
 import os
 import socket
 
+from tqdm import tqdm
+
 from core.encoder import export_public_key, import_ciphertext
 from core.key_manager import get_or_create_keys
 from core.mceliece import decap
@@ -52,12 +54,19 @@ def start_server(
             print("[*] Recieving the file...")
             enc_filepath = output_filename + ".enc"
             with open(enc_filepath, "wb") as f:
-                while True:
-                    chunk = recv_msg(conn)
-                    # EOF (empty message)
-                    if not chunk or len(chunk) == 0:
-                        break
-                    f.write(chunk)
+                with tqdm(
+                    desc=f"[+] Downloading file: {output_filename}",
+                    unit="B",
+                    unit_scale=True,
+                    unit_divisor=1024,
+                ) as pbar:
+                    while True:
+                        chunk = recv_msg(conn)
+                        # EOF (empty message)
+                        if not chunk or len(chunk) == 0:
+                            break
+                        f.write(chunk)
+                        pbar.update(len(chunk))
 
             # 6. Decrypt the file and check integrity (tag)
             print("[*] Decrypting the file...")

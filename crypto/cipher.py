@@ -6,6 +6,7 @@ Handles AES-256-GCM encryption and decryption of large files using memory-effici
 import os
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from tqdm import tqdm
 
 # Constants
 CHUNK_SIZE = 64 * 1024
@@ -26,15 +27,26 @@ def encrypt_file(key: bytes, input_filepath: str, output_filepath: str) -> None:
     cipher = Cipher(algorithms.AES(key), modes.GCM(nonce))
     encryptor = cipher.encryptor()
 
+    file_size = os.path.getsize(input_filepath)
+
     with open(input_filepath, "rb") as f_in, open(output_filepath, "wb") as f_out:
         f_out.write(nonce)
 
-        while True:
-            chunk = f_in.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            ciphertext_chunk = encryptor.update(chunk)
-            f_out.write(ciphertext_chunk)
+        with tqdm(
+            total=file_size,
+            desc="[+] Encryption in progress",
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+            leave=False,
+        ) as pbar:
+            while True:
+                chunk = f_in.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                ciphertext_chunk = encryptor.update(chunk)
+                f_out.write(ciphertext_chunk)
+                pbar.update(len(chunk))
 
         encryptor.finalize()
 
@@ -65,12 +77,21 @@ def decrypt_file(key: bytes, input_filepath: str, output_filepath: str) -> bool:
 
         with open(output_filepath, "wb") as f_out:
             bytes_read = 0
-            while bytes_read < ciphertext_size:
-                read_size = min(CHUNK_SIZE, ciphertext_size - bytes_read)
-                chunk = f_in.read(read_size)
+            with tqdm(
+                total=ciphertext_size,
+                desc="[+] Decryption in progress",
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                leave=False,
+            ) as pbar:
+                while bytes_read < ciphertext_size:
+                    read_size = min(CHUNK_SIZE, ciphertext_size - bytes_read)
+                    chunk = f_in.read(read_size)
 
-                f_out.write(decryptor.update(chunk))
-                bytes_read += len(chunk)
+                    f_out.write(decryptor.update(chunk))
+                    bytes_read += len(chunk)
+                    pbar.update(len(chunk))
 
             decryptor.finalize()
 

@@ -4,6 +4,8 @@ import os
 import socket
 import sys
 
+from tqdm import tqdm
+
 from core.encoder import export_ciphertext, import_public_key
 from core.mceliece import encap
 from core.parameters import McElieceParams
@@ -49,11 +51,20 @@ def send_file(
         enc_filepath = file_to_send + ".enc"
         encrypt_file(K, file_to_send, enc_filepath)
 
+        enc_size = os.path.getsize(enc_filepath)
         # 5. Send files (chunks over socket)
         print("[*] Sending the encrypted file...")
         with open(enc_filepath, "rb") as f:
-            while chunk := f.read(64 * 1024):
-                send_msg(s, chunk)
+            with tqdm(
+                total=enc_size,
+                desc="[+] File transfer in progress",
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as pbar:
+                while chunk := f.read(64 * 1024):
+                    send_msg(s, chunk)
+                    pbar.update(len(chunk))
 
         # EOF
         send_msg(s, b"")
