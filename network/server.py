@@ -1,20 +1,24 @@
 """PQC-Share Server (Receiver)"""
 
-import hashlib
 import os
 import socket
 
-from core.encoder import export_ciphertext, export_public_key, import_ciphertext
+from core.encoder import export_public_key, import_ciphertext
 from core.key_manager import get_or_create_keys
 from core.mceliece import decap
-from core.parameters import PARAMS
+from core.parameters import McElieceParams
 from crypto.cipher import decrypt_file
 from network.utils import recv_msg, send_msg
 
 
-def start_server(host="0.0.0.0", port=65432, output_filename="received_secret.txt"):
+def start_server(
+    params: McElieceParams,
+    host: str = "0.0.0.0",
+    port: int = 65432,
+    output_filename: str = "received_secret.txt",
+):
     # 1. Read or generate the key pair
-    pk_T, sk = get_or_create_keys()
+    pk_T, sk = get_or_create_keys(params)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, port))
@@ -27,17 +31,17 @@ def start_server(host="0.0.0.0", port=65432, output_filename="received_secret.tx
 
             # 2. Send the Public Key
             print("[*] Sending public key...")
-            pem_bytes = export_public_key(pk_T, PARAMS)
+            pem_bytes = export_public_key(pk_T, params)
             send_msg(conn, pem_bytes)
 
             # 3. Recieve the encrypted capsule (C)
             print("[*] Waiting for the capsule...")
             c_data = recv_msg(conn)
-            C = import_ciphertext(c_data, PARAMS)
+            C = import_ciphertext(c_data, params)
 
             # 4. Decapsulation (Extract the AES Key using Patterson Algorithm)
             print("[*] Decapsulation in progress...")
-            K_list = decap(PARAMS, C, sk)
+            K_list = decap(params, C, sk)
             if not K_list:
                 print("[-] ERROR: Decapsulation error!")
                 return

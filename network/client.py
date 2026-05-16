@@ -1,19 +1,20 @@
 """PQC-Share Client (Sender)"""
 
-import hashlib
 import os
 import socket
 import sys
 
-from core.encoder import export_ciphertext, export_public_key, import_public_key
+from core.encoder import export_ciphertext, import_public_key
 from core.mceliece import encap
-from core.parameters import PARAMS
+from core.parameters import McElieceParams
 from crypto.cipher import encrypt_file
 from network.security import verify_host
 from network.utils import recv_msg, send_msg
 
 
-def send_file(target_ip, target_port, file_to_send):
+def send_file(
+    params: McElieceParams, target_ip: str, target_port: int, file_to_send: str
+):
     if not os.path.exists(file_to_send):
         print(f"[-] ERROR: File could not found ({file_to_send})")
         return
@@ -27,15 +28,15 @@ def send_file(target_ip, target_port, file_to_send):
         pk_data = recv_msg(s)
 
         # Verify host
-        if not verify_host(target_ip, pk_data):
+        if not verify_host(target_ip, params.level, pk_data):
             print("[-] Baglanti guvenlik gerekcesiyle (MITM riski) sonlandirildi.")
             sys.exit(1)
 
-        pk_T = import_public_key(pk_data, PARAMS)
+        pk_T = import_public_key(pk_data, params)
 
         # 2. Encapsulation
         print("[*] Encapsulation in progress...")
-        C, K_list = encap(PARAMS, pk_T)
+        C, K_list = encap(params, pk_T)
         K = bytes(K_list)
 
         # 3. Send the capsule

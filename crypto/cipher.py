@@ -5,7 +5,6 @@ Handles AES-256-GCM encryption and decryption of large files using memory-effici
 
 import os
 
-from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 # Constants

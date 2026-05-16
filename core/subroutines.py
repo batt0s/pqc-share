@@ -11,7 +11,7 @@ from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.rings.polynomial.polynomial_ring import PolynomialRing_general
 from sage.structure.element import FieldElement
 
-from core.parameters import McEliece348864
+from core.parameters import McElieceParams
 
 
 def expand_seed(seed: bytes, length_in_bits: int) -> List[int]:
@@ -36,7 +36,7 @@ def expand_seed(seed: bytes, length_in_bits: int) -> List[int]:
 
 
 def matgen(
-    params: McEliece348864, g: Polynomial, alphas: Tuple[FieldElement, ...]
+    params: McElieceParams, g: Polynomial, alphas: Tuple[FieldElement, ...]
 ) -> Optional[Matrix]:
     """
     Algorithm 4.2: Matrix generation for Goppa codes (Systematic form).
@@ -114,7 +114,7 @@ def kem_hash(prefix: int, e: List[int], C: List[int]) -> bytes:
     return shake.digest(32)
 
 
-def encode(params: McEliece348864, e_bits: List[int], T: Matrix) -> List[int]:
+def encode(params: McElieceParams, e_bits: List[int], T: Matrix) -> List[int]:
     """
     Algorithm 4.3: C = He where H = (I_mt | T).
     """
@@ -147,7 +147,7 @@ def split_poly(
 
 
 def decode(
-    params: McEliece348864, C: List[int], private_key: dict
+    params: McElieceParams, C: List[int], private_key: dict
 ) -> Optional[List[int]]:
     """
     Algorithm 4.4: Decodes C to a word e of Hamming weight t.

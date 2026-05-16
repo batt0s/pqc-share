@@ -13,7 +13,6 @@ from crypto.cipher import decrypt_file, encrypt_file
 class TestAESGCM:
     @pytest.fixture(autouse=True)
     def setup_and_teardown(self):
-        """Her testten önce test dosyalarını oluşturur, sonra temizler."""
         self.key = os.urandom(32)  # 256-bit dummy McEliece KEM key
         self.plain_file = "test_plain.txt"
         self.enc_file = "test_enc.bin"

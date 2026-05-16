@@ -7,12 +7,12 @@ from sage.all import Matrix
 from sage.rings.polynomial.polynomial_element import Polynomial
 from sage.structure.element import FieldElement
 
-from core.parameters import McEliece348864
+from core.parameters import McElieceParams
 from core.subroutines import decode, encode, expand_seed, kem_hash, matgen
 
 
 def generate_irreducible(
-    params: McEliece348864, bits: List[int]
+    params: McElieceParams, bits: List[int]
 ) -> Optional[Polynomial]:
     """
     Algorithm 5.1: Irreducible-polynomial generation.
@@ -60,7 +60,7 @@ def generate_irreducible(
 
 
 def generate_field_ordering(
-    params: McEliece348864, bits: List[int]
+    params: McElieceParams, bits: List[int]
 ) -> Optional[Tuple[FieldElement, ...]]:
     """
     Algorithm 5.2: Field-ordering generation.
@@ -68,7 +68,7 @@ def generate_field_ordering(
     q distinct elements of F_q, or None (failure).
 
     Args:
-        params: McEliece348864 parameters.
+        params: McElieceParams parameters.
         bits: A list of integers (0 or 1) of length sigma_2 * q.
 
     Returns:
@@ -118,7 +118,7 @@ def generate_field_ordering(
     return tuple(alphas)
 
 
-def seeded_keygen(params: McEliece348864, seed: bytes) -> Tuple[Matrix, dict]:
+def seeded_keygen(params: McElieceParams, seed: bytes) -> Tuple[Matrix, dict]:
     """
     Algorithm 5.3: SEEDED_KEYGEN subroutine.
     Takes an l-bit seed and outputs a (public_key, private_key) pair.
@@ -179,7 +179,7 @@ def seeded_keygen(params: McEliece348864, seed: bytes) -> Tuple[Matrix, dict]:
         return T, private_key
 
 
-def generate_fixed_weight(params: McEliece348864) -> List[int]:
+def generate_fixed_weight(params: McElieceParams) -> List[int]:
     """
     Algorithm 5.4: Generates a vector e in F_2^n of exact weight t.
     """
@@ -223,7 +223,7 @@ def generate_fixed_weight(params: McEliece348864) -> List[int]:
         return e
 
 
-def encap(params: McEliece348864, T: Matrix) -> Tuple[List[int], bytes]:
+def encap(params: McElieceParams, T: Matrix) -> Tuple[List[int], bytes]:
     """
     Algorithm 5.5: Takes public key T, outputs ciphertext C and session key K .
     """
@@ -242,7 +242,7 @@ def encap(params: McEliece348864, T: Matrix) -> Tuple[List[int], bytes]:
     return C, K
 
 
-def decap(params: McEliece348864, C: List[int], private_key: dict) -> bytes:
+def decap(params: McElieceParams, C: List[int], private_key: dict) -> bytes:
     """
     Algorithm 5.6: Takes ciphertext C and private key, outputs session key K .
     """

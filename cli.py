@@ -7,6 +7,7 @@ import argparse
 import os
 import sys
 
+from core import parameters
 from core.config import resolve_target
 from network.client import send_file
 from network.server import start_server
@@ -58,12 +59,26 @@ def main():
         "-f", "--file", type=str, required=True, help="The path of the file to send to."
     )
 
+    parser.add_argument(
+        "--level",
+        type=int,
+        choices=[1, 3, 5],
+        default=1,
+        help="NIST Security Level (1: AES-128, 3: AES-192, 5: AES-256) (Default: 1)\nBoth sides must use the same level!",
+    )
+
     args = parser.parse_args()
+
+    params = parameters.McElieceParams(level=args.level)
+    print(f"[*] Using NIST Level {args.level}")
+    print("[!] Warning: Bot sides must use the same level!")
 
     # CLI
     if args.command == "listen":
         print("=== PQC-Share Reciever Mode ===")
-        start_server(host="0.0.0.0", port=args.port, output_filename=args.output)
+        start_server(
+            params, host="0.0.0.0", port=args.port, output_filename=args.output
+        )
 
     elif args.command == "send":
         if not os.path.exists(args.file):
@@ -72,7 +87,7 @@ def main():
 
         print("=== PQC-Share Sender Mode ===")
         target_ip, target_port = resolve_target(args.target, args.port)
-        send_file(target_ip, target_port, args.file)
+        send_file(params, target_ip, target_port, args.file)
 
 
 if __name__ == "__main__":
