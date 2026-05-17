@@ -136,12 +136,12 @@ Substituting $s$ on failure (rather than returning an error) is the IND-CCA2 cou
 
 Patterson's algorithm corrects up to $t$ errors in a binary Goppa code in polynomial time:
 
-1. Build the **syndrome polynomial** $S(y) = Σ 1/(y − αⱼ) mod g$ for each set bit in $C$.
+1. Build the **syndrome polynomial** $S(y) = \sum \frac{1}{y - \alpha_j} \mod g$ for each set bit in $C$.
 2. Compute $w$ such that $w² ≡ y mod g$ (exists and is unique in characteristic 2).
-3. Compute $T = S⁻¹ mod g$, then factor $T(y) + y = a²(y) + y·b²(y)$ using square-root splitting.
-4. Run the **half-GCD** (extended Euclidean) to find polynomials $a, b$ with $deg(a) ≤ t/2$.
-5. Form the **error locator polynomial** $\sigma(y) = a²(y) + y·b²(y)$.
-6. **Chien search**: evaluate $\sigma(αᵢ)$ for each $i$; a root at $\alpha_i$ means position $i$ is in error.
+3. Compute $T = S^{-1} \mod g$, then factor $T(y) + y = a^2(y) + y·b^2(y)$ using square-root splitting.
+4. Run the **half-GCD** (extended Euclidean) to find polynomials $a, b$ with $deg(a) \le t/2$.
+5. Form the **error locator polynomial** $\sigma(y) = a^2(y) + y·b^2(y)$.
+6. **Chien search**: evaluate $\sigma(α_i)$ for each $i$; a root at $\alpha_i$ means position $i$ is in error.
 
 ---
 
